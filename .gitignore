@@ -216,3 +216,59 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# =========================
+# Project-specific files
+# TC3002B - DeFungi
+# =========================
+
+# Dataset folders
+
+defungi/
+defungi_separation/
+# training/test generated folders
+
+training/
+test/
+
+# Large compressed dataset files
+
+*.zip
+
+*.rar
+
+*.7z
+
+*.tar
+
+*.tar.gz
+
+*.gz
+
+# Image files from datasets
+
+*.jpg
+
+*.jpeg
+
+*.png
+
+*.bmp
+
+*.tif
+
+*.tiff
+
+# Google Colab / Jupyter temporary files
+
+.ipynb_checkpoints/
+
+*.ipynb_checkpoints/
+
+# Mac / Windows system files
+
+.DS_Store
+
+Thumbs.db
+
+desktop.ini
