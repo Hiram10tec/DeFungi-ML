@@ -55,7 +55,26 @@ Each folder represents a class and works as the label for the images it contains
 
 #### Dataset Selection
 
-The **DeFungi** dataset was selected because it allows working with real images and applying preprocessing and data augmentation techniques.
+The **DeFungi** dataset was selected because it allows working with real images and applying preprocessing and data augmentation 
+techniques.
+
+#### Dataset Storage
+
+Due to the number of image files, the dataset was stored in Google Drive instead of being uploaded directly to the GitHub repository.
+
+The original dataset was stored in:
+
+```text
+MyDrive/TC3002/defungi
+```
+
+After the train/test split, the generated dataset was stored in:
+
+```text
+MyDrive/TC3002/defungi_separation
+```
+
+This allowed the dataset to be accessed from Google Colab while keeping the GitHub repository lightweight and focused on the notebook and documentation.
 
 #### Training and Testing Set Split
 
@@ -163,3 +182,16 @@ This visualization made it possible to verify that:
 - the labels are assigned according to their folder
 - the training set receives transformations
 - the test set remains without augmentation
+
+
+## Tools Used
+
+- Python
+- Google Colab
+- Google Drive
+- TensorFlow/Keras
+- Matplotlib
+- pathlib
+- random
+- shutil
+
