@@ -385,8 +385,75 @@ The comparison table summarizes the improvement across all metrics between the i
 - The confusion matrix is significantly more balanced compared to Phase 2 — the model no longer collapses to predicting H1 for everything, and correctly identifies the majority of H1 (792/881) and H6 (118/148) samples
 - The gap between the refined model (63%) and the state of the art reported in the reference paper (93%) suggests that a future improvement using transfer learning with pretrained architectures such as MobileNetV2 or EfficientNet would be the next step
 
+## Final Phase: Model Refinement
+
+#### Model v3: Transfer Learning with MobileNetV2
+
+After observing that the custom CNN plateaued around 63%, transfer learning was implemented following the approach of Korkmaz et al. (2026) [1], which uses pretrained CNN architectures (EfficientNet-B3, MobileNet-V3) to achieve up to 93% accuracy.
+
+**MobileNetV2** was selected as the pretrained base model. It was originally trained on 1.4 million ImageNet images and already contains general visual knowledge (edges, textures, shapes) that transfers well to fungi image classification.
+
+Two critical improvements over the initial MobileNetV2 attempts were identified through experimentation:
+
+**1. Correct preprocessing (`preprocess_input`)**
+
+MobileNetV2 was trained with pixel values in the range **-1 to 1**. The previous models used `rescale=1./255` (range 0 to 1), creating a domain mismatch that significantly degraded performance. Switching to MobileNetV2's own `preprocess_input` resolved this and produced the largest single accuracy improvement in the project.
+
+**2. Standard input size (224×224)**
+
+Increasing from 128×128 to 224×224 pixels (the standard for MobileNetV2) allowed the model to use its full feature extraction capacity on the microscopy images.
+
+**Architecture:**
+
+- **MobileNetV2 base** (`trainable=False`) → 2,257,984 frozen pretrained parameters
+- **GlobalAveragePooling2D** → reduces spatial dimensions efficiently
+- **Dense(128, relu)** → combines features for classification
+- **Dropout(0.3)** → reduces overfitting
+- **Dense(5, softmax)** → outputs probability for each class
+
+Only the 164,613 classification head parameters were trained. The MobileNetV2 weights remained frozen (Phase 1 approach), as fine-tuning attempts consistently destabilized the model due to the large domain gap between ImageNet photos and microscopy images.
+
+<img width="503" height="206" alt="Captura de pantalla 2026-06-07 a la(s) 1 52 44 p m" src="https://github.com/user-attachments/assets/bfbd9d06-0f84-4598-af7c-ce94fb02e985" />
+
+<img width="921" height="324" alt="Captura de pantalla 2026-06-07 a la(s) 1 53 29 p m" src="https://github.com/user-attachments/assets/660d201d-a624-4f82-95ff-d3a0749919a3" />
+
+The training curves show a clean, steady improvement over all 14 epochs before EarlyStopping triggered. Unlike the previous models where validation accuracy was erratic, the correct preprocessing produced stable convergence — both train and validation accuracy increase consistently without large oscillations. The val_loss reached its best at epoch 9 (0.6273) and the best weights were restored automatically.
+
+<img width="326" height="134" alt="Captura de pantalla 2026-06-07 a la(s) 1 53 56 p m" src="https://github.com/user-attachments/assets/076dd601-61fb-4308-9a70-c02154c110bf" />
+
+The classification report shows the strongest per-class performance of all three models. H5 reached an F1-score of 0.86 and H6 reached 0.84 — classes that scored below 0.10 in the initial model. H2 remains the most challenging class (F1: 0.49) due to its visual similarity to H1, as both TSH and BASH are types of Hyaline Hyphae that appear nearly identical under the microscope.
+
+<img width="491" height="389" alt="Captura de pantalla 2026-06-07 a la(s) 1 54 18 p m" src="https://github.com/user-attachments/assets/1ea4f873-28c1-4d5f-90f4-9cfc50cbfca8" />
+
+The confusion matrix confirms the most balanced predictions of all three models. Each class has a clear diagonal value and the H1 bias that dominated the initial model is largely resolved. The main remaining confusion is between H1 and H2, which is expected given their structural similarity at the microscopic level.
+
+
+#### Final Comparison: All Models
+
+| Metric | Model v1 (Phase 2) | Model v2 (Phase 3) | Model v3 (MobileNetV2) |
+|---|---|---|---|
+| Accuracy | 39% | 63% | **74.29%** |
+| Weighted F1-Score | 0.32 | 0.60 | **0.73** |
+| H1 F1-Score | 0.58 | 0.78 | 0.81 |
+| H2 F1-Score | 0.09 | 0.32 | 0.49 |
+| H3 F1-Score | 0.07 | 0.30 | **0.71** |
+| H5 F1-Score | 0.08 | 0.60 | **0.86** |
+| H6 F1-Score | 0.07 | 0.70 | **0.84** |
+
+#### Observations
+
+- Transfer learning with MobileNetV2 significantly outperformed the custom CNN (74.29% vs 63%), confirming the approach used in the reference paper [1]
+- The most critical factor was using the correct preprocessing (`preprocess_input`). This single change resolved the domain mismatch between MobileNetV2's training conditions and the input it was receiving, producing the largest accuracy jump of the entire project
+- Increasing the image size to 224×224 allowed MobileNetV2 to use its full feature extraction capacity, contributing to better performance on visually similar fungi classes
+- Class weights were maintained from v2 and continued to be effective — minority classes H3, H5, and H6 reached F1-scores of 0.71, 0.86, and 0.84 respectively, compared to below 0.10 in v1
+- EarlyStopping triggered at epoch 14, restoring best weights from epoch 9 (val_loss: 0.6273)
+- H2 remains the most difficult class (F1: 0.49) due to its visual similarity to H1, both being types of Hyaline Hyphae that look nearly identical under the microscope
+- The gap to the state-of-the-art (93%) is explained by the paper using EfficientNet-B3 with full fine-tuning — a more powerful architecture with deeper feature extraction and full network adaptation
+
 ## References
 
 - [1] Korkmaz, A. F., Ekinci, F., Kumru, E., Aydogan, A., Kaymak, H. S., Sevindik, M., Guzel, M. S., & Akata, I. (2026). Explainable deep learning ensemble framework for accurate classification of wild poisonous mushroom species. *BMC Biotechnology*, 26, 11. https://doi.org/10.1186/s12896-025-01092-z
+- [2] Hajati, F., Pineda Sopo, C. J., & Gheisari, S. (2021). DeFungi [Dataset]. UCI Machine Learning Repository. https://doi.org/10.48550/arXiv.2109.07322
+
 
 
